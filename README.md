@@ -1,4 +1,4 @@
-# Easevent 🎉
+# Easevent
 > Gérer vos événements n'aura jamais été aussi facile.
 
 ## Description
@@ -56,4 +56,4 @@ npm run web
 ```
 
 ## Auteure
-DONFACK SYNTHIA CALORINE — Licence Pro Full Stack 2024-2025
+DONFACK SYNTHIA CALORINE — Bachelor Full Stack 2025-2026
