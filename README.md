@@ -16,10 +16,44 @@ sans multitude d'outils disparates.
 ## Structure du projet
 ```
 easevent/
-├── backend/    # API Django REST Framework
-├── frontend/   # Application React Native + Expo
+├── backend/                  # API Django REST Framework
+│   ├── easevent/             # Configuration du projet Django
+│   │   ├── __init__.py
+│   │   ├── asgi.py
+│   │   ├── settings.py       # Configuration principale
+│   │   ├── urls.py           # Routeur principal
+│   │   └── wsgi.py
+│   ├── venv/                 # Environnement virtuel Python (ignoré par Git)
+│   ├── .env                  # Variables d'environnement (ignoré par Git)
+│   ├── .gitignore
+│   └── manage.py             # Outil de commandes Django
+│
+├── frontend/                 # Application React Native + Expo
+│   ├── assets/               # Images et icônes
+│   ├── node_modules/         # Dépendances (ignoré par Git)
+│   ├── .gitignore
+│   ├── App.js                # Point d'entrée de l'application
+│   ├── app.json              # Configuration Expo
+│   ├── index.js
+│   └── package.json          # Dépendances npm
+│
 └── README.md
 ```
 
+## Lancer le projet
+
+### Backend
+```bash
+cd backend
+source venv/bin/activate
+python3 manage.py runserver
+```
+
+### Frontend
+```bash
+cd frontend
+npm run web
+```
+
 ## Auteure
-DONFACK SYNTHIA CALORINE — bachelor  Full Stack 2025-2026
+DONFACK SYNTHIA CALORINE — Licence Pro Full Stack 2024-2025
