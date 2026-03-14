@@ -30,7 +30,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 # ─────────────────────────────────────────────────────────────
 # MODÈLE UTILISATEUR PERSONNALISÉ
 # ─────────────────────────────────────────────────────────────
-# ⚠️  LIGNE LA PLUS CRITIQUE DU FICHIER
+#  LIGNE LA PLUS CRITIQUE DU FICHIER
 # Doit être définie AVANT la première migration.
 # Indique à Django d'utiliser notre User (avec email comme
 # identifiant) plutôt que le User Django par défaut.

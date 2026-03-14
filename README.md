@@ -54,6 +54,10 @@ python3 manage.py runserver
 cd frontend
 npm run web
 ```
+ ## lien figma des maquettes 
+```bash
+https://www.figma.com/design/lQK3SWN2T1QPPuCqiSbjgO/easevent?node-id=0-1&p=f&t=bewQedMc8nmlG1ed-0
+```
 
 ## Auteure
 DONFACK SYNTHIA CALORINE — Bachelor Full Stack 2025-2026
