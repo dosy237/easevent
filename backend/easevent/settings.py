@@ -1,28 +1,77 @@
+"""
+easevent/settings.py
+═══════════════════════════════════════════════════════════════
+Fichier de configuration central de Django.
+
+═══════════════════════════════
+"""
+
 from pathlib import Path
 from decouple import config
+from datetime import timedelta
 
+# BASE_DIR pointe vers le dossier backend/
+# Path(__file__) = backend/easevent/settings.py
+# .resolve().parent = backend/easevent/
+# .parent = backend/
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY')
 
-DEBUG = config('DEBUG', cast=bool)
+# ─────────────────────────────────────────────────────────────
+# SÉCURITÉ
+# ─────────────────────────────────────────────────────────────
+# config() lit la valeur depuis le fichier .env
+# JAMAIS mettre la SECRET_KEY en dur dans ce fichier
+SECRET_KEY  = config('SECRET_KEY')
+DEBUG       = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
-ALLOWED_HOSTS = []
 
+# ─────────────────────────────────────────────────────────────
+# MODÈLE UTILISATEUR PERSONNALISÉ
+# ─────────────────────────────────────────────────────────────
+# ⚠️  LIGNE LA PLUS CRITIQUE DU FICHIER
+# Doit être définie AVANT la première migration.
+# Indique à Django d'utiliser notre User (avec email comme
+# identifiant) plutôt que le User Django par défaut.
+AUTH_USER_MODEL = 'users.User'
+
+
+# ─────────────────────────────────────────────────────────────
+# APPLICATIONS INSTALLÉES
+# ─────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
+    # Applications Django natives
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'corsheaders',
+    'django.contrib.postgres',   # ← nécessaire pour JSONField (JSONB) avancé
+
+    # Bibliothèques tierces
+    'rest_framework',            # Django REST Framework — pour construire l'API
+    'rest_framework_simplejwt',  # Authentification JWT
+    'corsheaders',               # CORS — autorise React Native à appeler l'API
+
+    # Nos applications Easevent
+    'users',
+    'events',
+    'invitations',
+    'analytics',
+    'subscriptions',
 ]
 
+
+# ─────────────────────────────────────────────────────────────
+# MIDDLEWARE
+# ─────────────────────────────────────────────────────────────
+# Les middlewares s'exécutent dans l'ordre pour chaque requête
+# CorsMiddleware DOIT être en premier
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',           # CORS — doit être en tête
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -50,32 +99,169 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'easevent.wsgi.application'
+ASGI_APPLICATION  = 'easevent.asgi.application'
 
+
+# ─────────────────────────────────────────────────────────────
+# BASE DE DONNÉES POSTGRESQL
+# ─────────────────────────────────────────────────────────────
+# Toutes les valeurs sensibles viennent du fichier .env
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
+        'ENGINE':   'django.db.backends.postgresql',
+        'NAME':     config('DB_NAME',     default='easevent_db'),
+        'USER':     config('DB_USER',     default='easevent_user'),
         'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
+        'HOST':     config('DB_HOST',     default='localhost'),
+        'PORT':     config('DB_PORT',     default='5432'),
+        # CONN_MAX_AGE = durée de réutilisation d'une connexion en secondes
+        # Évite de recréer une connexion PostgreSQL à chaque requête
+        'CONN_MAX_AGE': 60,
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+
+# ─────────────────────────────────────────────────────────────
+# DJANGO REST FRAMEWORK
+# ─────────────────────────────────────────────────────────────
+REST_FRAMEWORK = {
+    # Par défaut, toutes les vues nécessitent un JWT valide
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    # Pagination globale : 20 éléments par page
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+
+# ─────────────────────────────────────────────────────────────
+# JWT — Configuration des tokens d'authentification
+# ─────────────────────────────────────────────────────────────
+SIMPLE_JWT = {
+    # Access token : courte durée → limite l'exposition si volé
+    'ACCESS_TOKEN_LIFETIME':  timedelta(minutes=15),
+
+    # Refresh token : longue durée → stocké côté serveur dans Redis
+    # permet de renouveler l'access token sans redemander le mdp
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+
+    # À chaque refresh → nouveau refresh token généré
+    # → l'ancien est invalidé
+    'ROTATE_REFRESH_TOKENS':     True,
+    'BLACKLIST_AFTER_ROTATION':  True,
+
+    'ALGORITHM':   'HS256',
+    'SIGNING_KEY': config('SECRET_KEY'),
+
+    # Format de l'en-tête HTTP attendu :
+    # Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+
+# ─────────────────────────────────────────────────────────────
+# CORS — Autoriser le front-end à appeler l'API
+# ─────────────────────────────────────────────────────────────
+# CORS (Cross-Origin Resource Sharing) : par sécurité, les
+# navigateurs bloquent les requêtes vers un autre domaine/port.
+# Ces paramètres autorisent notre front-end React Native.
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:19000',   # Expo iOS simulator
+    'http://localhost:19001',
+    'http://localhost:3000',    # Expo Web
+    'http://127.0.0.1:8081',
+    'exp://localhost:19000',    # Expo Go sur téléphone réel
 ]
+CORS_ALLOW_CREDENTIALS = True
 
+# En développement seulement — autorise tout (à retirer en prod)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+
+
+# ─────────────────────────────────────────────────────────────
+# REDIS
+# ─────────────────────────────────────────────────────────────
+REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
+
+# Cache Django → stocke les résultats analytiques (TTL 1h)
+CACHES = {
+    'default': {
+        'BACKEND':  'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+    }
+}
+
+# Celery → file d'attente des tâches asynchrones
+CELERY_BROKER_URL        = REDIS_URL
+CELERY_RESULT_BACKEND    = REDIS_URL
+CELERY_ACCEPT_CONTENT    = ['json']
+CELERY_TASK_SERIALIZER   = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE          = 'Europe/Paris'
+
+# Celery Beat → tâches planifiées (bilans à 20h, rappels...)
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    # Bilan quotidien envoyé à 20h heure de Paris
+    'bilan-quotidien-20h': {
+        'task':     'events.tasks.send_daily_report',
+        'schedule': crontab(hour=20, minute=0),
+    },
+    # Réentraînement hebdomadaire du modèle ML (dimanche 3h)
+    'reentrain-ml-hebdo': {
+        'task':     'analytics.tasks.retrain_recommendation_model',
+        'schedule': crontab(hour=3, minute=0, day_of_week=0),
+    },
+    # Mise à jour des statuts d'événements toutes les 5 minutes
+    # (DRAFT→PUBLISHED, PUBLISHED→LIVE, LIVE→ENDED, ENDED→SOUVENIR)
+    'update-event-statuses': {
+        'task':     'events.tasks.update_event_statuses',
+        'schedule': crontab(minute='*/5'),
+    },
+}
+
+
+# ─────────────────────────────────────────────────────────────
+# DJANGO CHANNELS (WebSocket — temps réel)
+# ─────────────────────────────────────────────────────────────
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG':  {'hosts': [REDIS_URL]},
+    },
+}
+
+
+# ─────────────────────────────────────────────────────────────
+# INTERNATIONALISATION
+# ─────────────────────────────────────────────────────────────
 LANGUAGE_CODE = 'fr-fr'
-TIME_ZONE = 'Europe/Paris'
-USE_I18N = True
-USE_TZ = True
+TIME_ZONE     = 'Europe/Paris'
+USE_I18N      = True
+# USE_TZ = True → toutes les dates sont stockées en UTC en base.
+# Django convertit automatiquement selon le fuseau de l'utilisateur.
+# Ne JAMAIS mettre False — cela causera des bugs avec les fuseaux horaires.
+USE_TZ        = True
 
-STATIC_URL = 'static/'
 
+# ─────────────────────────────────────────────────────────────
+# FICHIERS STATIQUES
+# ─────────────────────────────────────────────────────────────
+STATIC_URL  = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL   = '/media/'
+MEDIA_ROOT  = BASE_DIR / 'media'
+
+
+# ─────────────────────────────────────────────────────────────
+# CLÉ PRIMAIRE PAR DÉFAUT
+# ─────────────────────────────────────────────────────────────
+# On utilise des UUIDField dans nos models donc on n'a pas
+# besoin d'auto-incrémentation. BigAutoField est gardé comme
+# fallback pour les tables Django internes (sessions, etc.)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-CORS_ALLOW_ALL_ORIGINS = True
