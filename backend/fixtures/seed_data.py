@@ -37,7 +37,7 @@ from invitations.models  import Invitation, RSVPQuestion, RSVPResponse
 from analytics.models    import Feedback, EventAnalytics
 from subscriptions.models import Subscription
 
-print("\n🌱 Démarrage du seed Easevent...\n")
+print("\n Démarrage du seed Easevent...\n")
 
 
 # ── Fonctions utilitaires ─────────────────────────────────────
@@ -63,7 +63,7 @@ def dt(jours=0, heure=12, minute=0):
 with transaction.atomic():
 
     # ── 1. Nettoyage ─────────────────────────────────────────
-    print("🧹 Nettoyage...")
+    print(" Nettoyage...")
     # Ordre important : supprimer d'abord les tables enfants
     # (celles qui ont des FK vers d'autres tables)
     RSVPResponse.objects.all().delete()
@@ -82,7 +82,7 @@ with transaction.atomic():
     print("   ✓ Nettoyage terminé\n")
 
     # ── 2. Utilisateurs ──────────────────────────────────────
-    print("👤 Création des utilisateurs...")
+    print(" Création des utilisateurs...")
 
     # Superutilisateur — accès à l'interface admin Django
     admin = User.objects.create_superuser(
@@ -147,13 +147,13 @@ with transaction.atomic():
     # Normalement créées automatiquement par le signal post_save.
     # On les crée manuellement ici car le signal ne se déclenche
     # pas toujours dans le contexte d'un shell script.
-    print("⚙️  Création des préférences...")
+    print("  Création des préférences...")
     for user in User.objects.all():
         UserPreferences.objects.get_or_create(user=user)
     print(f"   ✓ {UserPreferences.objects.count()} préférences créées")
 
     # ── 4. Abonnements ────────────────────────────────────────
-    print("💳 Création des abonnements...")
+    print(" Création des abonnements...")
     Subscription.objects.create(
         user                 = sarah,
         plan                 = 'pro',
@@ -175,7 +175,7 @@ with transaction.atomic():
     print(f"   ✓ {Subscription.objects.count()} abonnements créés")
 
     # ── 5. Domaine personnalisé Plan Pro ──────────────────────
-    print("🌐 Création du domaine personnalisé...")
+    print(" Création du domaine personnalisé...")
     domaine_sarah = Domain.objects.create(
         user               = sarah,
         domain_name        = "mariage-sarah-thomas.fr",
@@ -187,7 +187,7 @@ with transaction.atomic():
     print(f"   ✓ Domaine '{domaine_sarah.domain_name}' créé")
 
     # ── 6. Événements ─────────────────────────────────────────
-    print("🎉 Création des événements...")
+    print(" Création des événements...")
 
     # Palette de couleurs du mariage (générée par OpenCV en vrai)
     palette_mariage = {
@@ -275,7 +275,7 @@ with transaction.atomic():
     print(f"   ✓ {Event.objects.count()} événements créés")
 
     # ── 7. Templates générés (SHA-256) ────────────────────────
-    print("🎨 Création des templates...")
+    print(" Création des templates...")
     for i in range(7):
         config = {
             "event_type": "mariage",
@@ -296,7 +296,7 @@ with transaction.atomic():
     print(f"   ✓ {TemplateGeneration.objects.count()} templates créés")
 
     # ── 8. Collaborateur ──────────────────────────────────────
-    print("🤝 Création du collaborateur...")
+    print(" Création du collaborateur...")
     EventCollaborator.objects.create(
         event = mariage,
         user  = thomas,
@@ -311,7 +311,7 @@ with transaction.atomic():
     print(f"   ✓ {EventCollaborator.objects.count()} collaborateur créé")
 
     # ── 9. Questions RSVP ─────────────────────────────────────
-    print("❓ Création des questions RSVP...")
+    print(" Création des questions RSVP...")
     q_alim = RSVPQuestion.objects.create(
         event=mariage, order=1,
         question_text = "Avez-vous des restrictions alimentaires ou allergies ?",
@@ -383,7 +383,7 @@ with transaction.atomic():
     print(f"   ✓ {RSVPResponse.objects.count()} réponses créées")
 
     # ── 12. Feedbacks (avec résultats NLP simulés) ────────────
-    print("⭐ Création des feedbacks...")
+    print(" Création des feedbacks...")
     feedbacks_data = [
         {
             "user": thomas, "rating": 5, "anon": False,
@@ -434,7 +434,7 @@ with transaction.atomic():
     print(f"   ✓ {Feedback.objects.count()} feedbacks créés")
 
     # ── 13. Analytics ─────────────────────────────────────────
-    print("📊 Création des analytics...")
+    print(" Création des analytics...")
     for delta, vues, confirms, score in [
         (-7, 89, 12, None), (-6, 134, 18, None), (-5, 201, 27, None),
         (-4, 287, 35, None), (-3, 356, 41, None), (-2, 420, 45, None),
@@ -460,7 +460,7 @@ with transaction.atomic():
     print(f"   ✓ {EventAnalytics.objects.count()} enregistrements analytics créés")
 
     # ── 14. Médias ────────────────────────────────────────────
-    print("📸 Création des médias...")
+    print(" Création des médias...")
     EventMedia.objects.create(
         event=mariage, uploader=sarah,
         r2_key="events/mariage-sarah-thomas/hero_photo.jpg",
@@ -478,7 +478,7 @@ with transaction.atomic():
 
     # ── Résumé ────────────────────────────────────────────────
     print("\n" + "═"*50)
-    print("✅  SEED TERMINÉ — Données créées :")
+    print("  SEED TERMINÉ — Données créées :")
     print("═"*50)
     print(f"   👤  Utilisateurs  : {User.objects.count()}")
     print(f"   💳  Abonnements   : {Subscription.objects.count()}")
