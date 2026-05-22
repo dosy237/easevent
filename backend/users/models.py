@@ -310,3 +310,34 @@ class Domain(models.Model):
 
     def __str__(self):
         return f"{self.domain_name} ({self.get_status_display()})"
+# ─────────────────────────────────────────────────────────────────
+# TABLE : email_verifications
+# Stocke les tokens de vérification email temporaires.
+# Chaque token expire après 24 heures.
+# ─────────────────────────────────────────────────────────────────
+class EmailVerification(models.Model):
+    """
+    Token de vérification email.
+    Créé à l'inscription, supprimé après vérification.
+    """
+    id         = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user       = models.OneToOneField(
+        User,
+        on_delete    = models.CASCADE,
+        related_name = 'email_verification'
+    )
+    # Token aléatoire de 64 caractères — envoyé dans le lien email
+    token      = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        db_table = 'email_verifications'
+
+    def is_expired(self):
+        """Retourne True si le token a expiré."""
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"Vérification email pour {self.user.email}"
+    

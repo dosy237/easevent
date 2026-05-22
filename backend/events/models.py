@@ -150,6 +150,16 @@ class Event(models.Model):
         verbose_name = "Domaine personnalisé (Plan Pro)"
     )
 
+    # ── Images de couverture ─────────────────────────────────
+    # cover_image stocke l'URL ou le chemin de l'image de couverture
+    # de l'événement (celle affichée dans la HomeScreen)
+    cover_image = models.CharField(
+        max_length   = 512,
+        blank        = True,
+        null         = True,
+        verbose_name = "Image de couverture de l'événement"
+    )
+
     # ── Métriques ─────────────────────────────────────────────
     view_count = models.PositiveIntegerField(default=0, verbose_name="Nombre de vues")
 

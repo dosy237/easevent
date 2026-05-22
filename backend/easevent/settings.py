@@ -9,6 +9,8 @@ Fichier de configuration central de Django.
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
+import cloudinary
+import cloudinary.uploader
 
 # BASE_DIR pointe vers le dossier backend/
 # Path(__file__) = backend/easevent/settings.py
@@ -24,9 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # JAMAIS mettre la SECRET_KEY en dur dans ce fichier
 SECRET_KEY  = config('SECRET_KEY')
 DEBUG       = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
-
-
+ALLOWED_HOSTS = ['*']
 # ─────────────────────────────────────────────────────────────
 # MODÈLE UTILISATEUR PERSONNALISÉ
 # ─────────────────────────────────────────────────────────────
@@ -265,3 +265,20 @@ MEDIA_ROOT  = BASE_DIR / 'media'
 # besoin d'auto-incrémentation. BigAutoField est gardé comme
 # fallback pour les tables Django internes (sessions, etc.)
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# ─────────────────────────────────────────────────────────────────
+# EMAIL — SendGrid
+# Django utilise un "backend" email pour savoir comment envoyer.
+# SendGridBackend remplace le backend SMTP par défaut.
+# ─────────────────────────────────────────────────────────────────
+EMAIL_BACKEND       = 'sendgrid_backend.SendgridBackend'
+SENDGRID_API_KEY    = config('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL  = config('DEFAULT_FROM_EMAIL', default='dosyca35@gmail.com')
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
+'rest_framework_simplejwt.token_blacklist',
+
+cloudinary.config(
+    cloud_name = config('CLOUDINARY_CLOUD_NAME'),
+    api_key    = config('CLOUDINARY_API_KEY'),
+    api_secret = config('CLOUDINARY_API_SECRET'),
+    secure     = True,  # Toujours utiliser HTTPS
+)

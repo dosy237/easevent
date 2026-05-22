@@ -187,9 +187,8 @@ with transaction.atomic():
     print(f"   ✓ Domaine '{domaine_sarah.domain_name}' créé")
 
     # ── 6. Événements ─────────────────────────────────────────
-    print(" Création des événements...")
+    print("🎉 Création des événements...")
 
-    # Palette de couleurs du mariage (générée par OpenCV en vrai)
     palette_mariage = {
         "primary":  "#C4A882",
         "secondary":"#F5E6D3",
@@ -199,16 +198,15 @@ with transaction.atomic():
         "bg_dark":  "#3D2B1F"
     }
 
-    # Configuration complète du mini-site (générée par API Claude en vrai)
     template_mariage = {
         "event_type": "mariage",
         "palette":    palette_mariage,
         "zones": {
             "header": {"component": "hero_3", "animation": "fade_parallax"},
             "corps":  [
-                {"component": "programme_2",      "animation": "slide_left"},
-                {"component": "galerie_1",         "animation": "zoom_in"},
-                {"component": "compte_a_rebours_1","animation": "pulse"},
+                {"component": "programme_2",       "animation": "slide_left"},
+                {"component": "galerie_1",          "animation": "zoom_in"},
+                {"component": "compte_a_rebours_1", "animation": "pulse"},
             ],
             "rsvp":   {"component": "rsvp_2"},
             "footer": {"component": "footer_1", "show_branding": False}
@@ -221,8 +219,8 @@ with transaction.atomic():
         event_type       = "mariage",
         description      = (
             "Nous avons le bonheur de vous inviter à célébrer notre union "
-            "le 14 juin 2025 dans le Château de Vaux-le-Vicomte. "
-            "Une journée magique en votre compagnie. Tenue de soirée exigée. 💍"
+            "le 14 juin dans le Château de Vaux-le-Vicomte. "
+            "Une journée magique en votre compagnie. Tenue de soirée exigée."
         ),
         start_date       = dt(120, heure=14, minute=30),
         end_date         = dt(120, heure=23, minute=59),
@@ -236,6 +234,7 @@ with transaction.atomic():
         ambiance         = "elegant",
         subdomain        = "mariage-sarah-thomas",
         custom_domain    = domaine_sarah,
+        cover_image      = "https://images.pexels.com/photos/1395964/pexels-photo-1395964.jpeg?auto=compress&cs=tinysrgb&w=800",
         view_count       = 247,
     )
 
@@ -246,7 +245,7 @@ with transaction.atomic():
         description      = (
             "Durant cette masterclass de 3 heures, nous verrons comment définir "
             "votre positionnement unique et transformer votre expertise en revenus. "
-            "Places limitées à 50 participants. Café offert. ☕"
+            "Places limitées à 50 participants. Café offert."
         ),
         start_date       = dt(30, heure=9, minute=0),
         end_date         = dt(30, heure=12, minute=30),
@@ -257,19 +256,128 @@ with transaction.atomic():
         status           = "published",
         ambiance         = "professionnel",
         subdomain        = "masterclass-marque-perso-juin25",
+        cover_image      = "https://images.pexels.com/photos/7648047/pexels-photo-7648047.jpeg?auto=compress&cs=tinysrgb&w=800",
         view_count       = 512,
     )
 
-    # Événement en brouillon — pour tester le statut DRAFT
     anniversaire = Event.objects.create(
         organizer   = marie,
         title       = "30 ans de Marie — Soirée surprise !",
         event_type  = "anniversaire",
-        description = "Chut, c'est une surprise ! 🎂",
+        description = "Chut, c'est une surprise !",
         start_date  = dt(60, heure=20, minute=0),
         end_date    = dt(60, heure=23, minute=59),
         visibility  = "draft",
         status      = "draft",
+        cover_image = "https://images.pexels.com/photos/1840608/pexels-photo-1840608.jpeg?auto=compress&cs=tinysrgb&w=800",
+    )
+
+    Event.objects.create(
+        organizer        = julien,
+        title            = "Gala de Charité 2025",
+        event_type       = "conference",
+        description      = (
+            "Une soirée exceptionnelle au profit des enfants défavorisés. "
+            "Dîner gastronomique, vente aux enchères et spectacle live. "
+            "Dress code : tenue de soirée."
+        ),
+        start_date       = dt(45, heure=19, minute=0),
+        end_date         = dt(45, heure=23, minute=30),
+        location_address = "Emerald Hall, 12 Avenue Montaigne, 75008 Paris",
+        latitude         = 48.8656,
+        longitude        = 2.3021,
+        visibility       = "public",
+        status           = "published",
+        ambiance         = "elegant",
+        subdomain        = "gala-charite-2025",
+        cover_image      = "https://images.pexels.com/photos/1395964/pexels-photo-1395964.jpeg?auto=compress&cs=tinysrgb&w=800",
+        view_count       = 834,
+    )
+
+    Event.objects.create(
+        organizer        = sarah,
+        title            = "Neon Night Party",
+        event_type       = "soiree",
+        description      = (
+            "La soirée la plus colorée de l'année. DJ sets, performances artistiques, "
+            "open bar et décoration néon immersive sur 3 étages. 18+ uniquement."
+        ),
+        start_date       = dt(20, heure=22, minute=0),
+        end_date         = dt(21, heure=5,  minute=0),
+        location_address = "Le Batofar, Port de la Gare, 75013 Paris",
+        latitude         = 48.8308,
+        longitude        = 2.3746,
+        visibility       = "public",
+        status           = "published",
+        ambiance         = "festif",
+        subdomain        = "neon-night-party-2025",
+        cover_image      = "https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg?auto=compress&cs=tinysrgb&w=800",
+        view_count       = 1203,
+    )
+
+    Event.objects.create(
+        organizer        = julien,
+        title            = "Fashion Week Preview — Printemps 2026",
+        event_type       = "conference",
+        description      = (
+            "Avant-première exclusive des collections Printemps-Été 2026. "
+            "Défilés, rencontres avec les créateurs et cocktail de clôture. "
+            "Sur invitation uniquement."
+        ),
+        start_date       = dt(55, heure=17, minute=30),
+        end_date         = dt(55, heure=21, minute=0),
+        location_address = "Palais Royal, Place du Palais Royal, 75001 Paris",
+        latitude         = 48.8638,
+        longitude        = 2.3369,
+        visibility       = "public",
+        status           = "published",
+        ambiance         = "elegant",
+        subdomain        = "fashion-week-preview-2026",
+        cover_image      = "https://images.pexels.com/photos/1840608/pexels-photo-1840608.jpeg?auto=compress&cs=tinysrgb&w=800",
+        view_count       = 2156,
+    )
+
+    Event.objects.create(
+        organizer        = marie,
+        title            = "Summit Innovation AI — Paris",
+        event_type       = "conference",
+        description      = (
+            "Le rendez-vous incontournable des acteurs de l'intelligence artificielle "
+            "en France. Keynotes, ateliers pratiques, networking et démonstrations live."
+        ),
+        start_date       = dt(35, heure=9,  minute=0),
+        end_date         = dt(35, heure=18, minute=0),
+        location_address = "Station F, 5 Parvis Alan Turing, 75013 Paris",
+        latitude         = 48.8300,
+        longitude        = 2.3750,
+        visibility       = "public",
+        status           = "published",
+        ambiance         = "professionnel",
+        subdomain        = "summit-innovation-ai-paris",
+        cover_image      = "https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=800",
+        view_count       = 3421,
+    )
+
+    Event.objects.create(
+        organizer        = sarah,
+        title            = "Rooftop Jazz & Wine Evening",
+        event_type       = "soiree",
+        description      = (
+            "Une soirée jazz intimiste sur les toits de Paris. "
+            "Quartet de jazz live, sélection de vins naturels, tapas gastronomiques "
+            "et vue panoramique sur la ville lumière."
+        ),
+        start_date       = dt(25, heure=19, minute=30),
+        end_date         = dt(25, heure=23, minute=0),
+        location_address = "Rooftop Le Perchoir, 14 Rue Crespin du Gast, 75011 Paris",
+        latitude         = 48.8633,
+        longitude        = 2.3807,
+        visibility       = "public",
+        status           = "published",
+        ambiance         = "elegant",
+        subdomain        = "rooftop-jazz-wine-2025",
+        cover_image      = "https://images.pexels.com/photos/1407322/pexels-photo-1407322.jpeg?auto=compress&cs=tinysrgb&w=800",
+        view_count       = 678,
     )
 
     print(f"   ✓ {Event.objects.count()} événements créés")
