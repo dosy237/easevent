@@ -23,8 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons }     from '@expo/vector-icons';
 import { useAuth }      from '../context/AuthContext';
 
-const API_BASE = 'http://192.168.1.87:8000';
-
+import { API_BASE } from '../config';
 const C = {
   green:      '#1B6B4A',
   greenDark:  '#155C3C',

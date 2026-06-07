@@ -2,7 +2,7 @@
 > Gérer vos événements n'aura jamais été aussi facile.
 
 ## Description
-Easevent est une plateforme intelligente de gestion événementielle qui permet
+Easevent est une plateforme  de gestion événementielle qui permet
 à tout organisateur de créer, communiquer et analyser un événement de manière
 professionnelle, automatisée et centralisée — sans graphiste, sans développeur,
 sans multitude d'outils disparates.

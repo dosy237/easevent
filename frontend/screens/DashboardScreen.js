@@ -65,8 +65,7 @@ import { useAuth } from '../context/AuthContext';
 // ─────────────────────────────────────────────────────────────────
 
 // Adresse du backend Django — doit correspondre à l'IP de ta machine
-const API_BASE = 'http://192.168.1.87:8000';
-
+import { API_BASE } from '../config';
 // ─────────────────────────────────────────────────────────────────
 // PALETTE DE COULEURS — identique aux autres écrans pour la cohérence
 // ─────────────────────────────────────────────────────────────────
