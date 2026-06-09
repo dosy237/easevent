@@ -73,108 +73,86 @@ from .serializers import EventPublicSerializer
 def liste_evenements_publics(request):
     """
     Retourne la liste des événements publics publiés.
-    Utilisé dans le fil de découverte — accessible sans connexion.
-
-    Paramètres optionnels dans l'URL :
-    - search    : recherche texte sur titre, description, lieu
-    - type      : filtre par type (conference, soiree, mariage...)
-    - date_from : date minimum au format YYYY-MM-DD
-    - date_to   : date maximum au format YYYY-MM-DD
-    - ordering  : 'date' (défaut) | 'popular' | 'distance'
-    - lat + lng : coordonnées GPS pour le tri par distance
+    Fil d'exploration public (accessible sans connexion).
     """
-    # Seuls les événements publics et publiés sont visibles
-    # Les événements privés n'apparaissent JAMAIS dans ce fil
-    evenements = Event.objects.filter(
-        visibility         = 'public',
-        status             = 'published',
-        deleted_at__isnull = True,
+    # === 1. Filtre de base (public + publié + non supprimé) ===
+    queryset = Event.objects.filter(
+        visibility='public',
+        status='published',
+        deleted_at__isnull=True,
     )
 
-    # ── Recherche texte (insensible à la casse) ───────────────────
+    # === 2. Filtres dynamiques ===
+    # Recherche texte
     search = request.query_params.get('search', '').strip()
     if search:
-        evenements = evenements.filter(
-            Q(title__icontains=search)           |
-            Q(description__icontains=search)     |
+        queryset = queryset.filter(
+            Q(title__icontains=search) |
+            Q(description__icontains=search) |
             Q(location_address__icontains=search)
         )
 
-    # ── Filtre par type d'événement ───────────────────────────────
+    # Filtre par type d'événement
     event_type = request.query_params.get('type', '').strip()
     if event_type:
-        evenements = evenements.filter(event_type=event_type)
+        queryset = queryset.filter(event_type=event_type)
 
-    # ── Filtre par date ───────────────────────────────────────────
+    # Filtre par date
     date_from = request.query_params.get('date_from', '').strip()
     if date_from:
         try:
-            evenements = evenements.filter(
-                start_date__date__gte=datetime.strptime(date_from, '%Y-%m-%d').date()
-            )
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            queryset = queryset.filter(start_date__date__gte=date_from_obj)
         except ValueError:
-            pass  # Format invalide → on ignore le filtre
+            pass
 
     date_to = request.query_params.get('date_to', '').strip()
     if date_to:
         try:
-            evenements = evenements.filter(
-                start_date__date__lte=datetime.strptime(date_to, '%Y-%m-%d').date()
-            )
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            queryset = queryset.filter(start_date__date__lte=date_to_obj)
         except ValueError:
             pass
 
-    # ── Tri ───────────────────────────────────────────────────────
+    # === 3. Gestion du tri ===
     ordering = request.query_params.get('ordering', 'date')
     user_lat = request.query_params.get('lat')
     user_lng = request.query_params.get('lng')
 
-    evenements_list = list(evenements)
-
+    # On convertit en liste seulement si on a besoin de tri custom
     if ordering == 'distance' and user_lat and user_lng:
-        # Formule de Haversine — calcule la distance réelle en km
-        # entre deux points GPS sur la surface de la Terre.
-        # C'est la même formule utilisée par Google Maps.
+        evenements_list = list(queryset)
+
         def haversine(lat1, lon1, lat2, lon2):
-            R = 6371  # Rayon moyen de la Terre en kilomètres
-            lat1, lon1, lat2, lon2 = map(math.radians, [
-                float(lat1), float(lon1), float(lat2), float(lon2)
-            ])
+            R = 6371  # Rayon de la Terre en km
+            lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
             dlat = lat2 - lat1
             dlon = lon2 - lon1
             a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
             return R * 2 * math.asin(math.sqrt(a))
 
-        def get_distance(event):
-            if event.latitude and event.longitude:
-                return haversine(user_lat, user_lng, event.latitude, event.longitude)
-            return 99999  # Événements sans coordonnées → en dernier
-
-        evenements_list = sorted(evenements_list, key=get_distance)
-
-        # Attacher la distance calculée à chaque événement
-        # pour que le serializer puisse la retourner
         for event in evenements_list:
             if event.latitude and event.longitude:
-                event._distance_km = round(
-                    haversine(user_lat, user_lng, event.latitude, event.longitude), 1
-                )
+                event._distance_km = round(haversine(user_lat, user_lng, event.latitude, event.longitude), 1)
             else:
                 event._distance_km = None
 
-    elif ordering == 'popular':
-        evenements_list = sorted(evenements_list, key=lambda e: e.view_count, reverse=True)
-    else:
-        # Tri par date de début (plus proche en premier)
-        evenements_list = sorted(evenements_list, key=lambda e: e.start_date)
+        evenements_list = sorted(evenements_list, key=lambda e: e._distance_km if e._distance_km is not None else 99999)
 
+    elif ordering == 'popular':
+        evenements_list = list(queryset.order_by('-view_count'))
+
+    else:
+        # Tri par date (plus proche en premier)
+        evenements_list = list(queryset.order_by('start_date'))
+
+    # === 4. Sérialisation et réponse ===
     serializer = EventPublicSerializer(evenements_list, many=True)
+
     return Response({
-        'count':  len(evenements_list),
+        'count': len(evenements_list),
         'events': serializer.data,
     })
-
-
 # ════════════════════════════════════════════════════════════════
 # VIEW : detail_evenement_public
 # GET /api/events/publics/<event_id>/
