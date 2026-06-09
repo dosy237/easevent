@@ -52,7 +52,7 @@ const C = {
   greenDark:  '#155C3C',
   greenLight: '#E8F5EE',
   orange:     '#E76F51',
-  white:      '#FFFFFF',
+  white:      '#2b0707',
   bg:         '#F7F7F7',
   text:       '#1A1A1A',
   textSub:    '#555555',
@@ -325,54 +325,54 @@ export default function LoginScreen({ navigation }) {
   };
 
   // ── Inscription ───────────────────────────────────────────────
-  const handleRegisterStep1 = () => {
-    if (!validateRegisterStep1()) return;
-    // Passe à l'étape 2 — prénom et nom
-    setRegisterStep(2);
-  };
-
   const handleRegisterStep2 = async () => {
-    if (!validateRegisterStep2()) return;
+  if (!validateRegisterStep2()) return;
 
-    setLoading(true);
-    setError('');
+  setLoading(true);
+  setError('');
 
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/register/`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          email,
-          password,
-          first_name: firstName.trim(),
-          last_name:  lastName.trim(),
-        }),
-      });
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/register/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (!res.ok) {
-        const msg = data?.email?.[0]
-          || data?.detail
-          || 'Une erreur est survenue lors de l\'inscription.';
-        setError(msg);
-        return;
-      }
-
-      // Inscription réussie → retour au landing avec message
-      // TODO : afficher un message "Vérifiez votre email"
-     navigation?.reset({
-        index: 0,
-       routes: [{ name: 'TabDashboard' }],
-     });
-
-    } catch (err) {
-      setError('Impossible de s\'inscrire. Vérifie ta connexion internet.');
-      console.error('Erreur register:', err);
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      const msg = data?.email?.[0] || data?.detail || 'Une erreur est survenue lors de l\'inscription.';
+      setError(msg);
+      return;
     }
-  };
+
+    // ✅ Inscription réussie → on connecte automatiquement l'utilisateur
+    if (data.access && data.refresh && data.user) {
+      await login({
+        userData: data.user,
+        access: data.access,
+        refresh: data.refresh,
+      });
+    }
+
+    // Redirection vers l'accueil
+    navigation?.reset({
+      index: 0,
+      routes: [{ name: 'TabDashboard' }],
+    });
+
+  } catch (err) {
+    setError('Impossible de s\'inscrire. Vérifie ta connexion internet.');
+    console.error('Erreur register:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ─────────────────────────────────────────────────────────────
   // RENDU — ÉTAT LANDING
