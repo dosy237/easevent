@@ -27,7 +27,8 @@ def get_tokens_for_user(user):
 
 
 def send_verification_email(user, token):
-    verification_url = f"http://192.168.1.87:8000/api/auth/verify/{token}/"
+    # URL de production
+    verification_url = f"https://easevent-backend.onrender.com/api/auth/verify/{token}/"
 
     send_mail(
         subject    = '✅ Confirmez votre adresse email — Easevent',
@@ -36,12 +37,9 @@ Bonjour {user.first_name},
 
 Merci de vous être inscrit sur Easevent !
 
-Copiez ce lien dans votre navigateur pour activer votre compte :
+Clique sur ce lien pour activer ton compte :
 
 {verification_url}
-
-Ou copiez uniquement le token et testez avec cette commande :
-curl http://192.168.1.87:8000/api/auth/verify/{token}/
 
 Ce lien expire dans 24 heures.
 

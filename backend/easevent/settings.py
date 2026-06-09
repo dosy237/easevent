@@ -23,19 +23,32 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 # Configuration des hôtes et CORS selon l'environnement
+# ─────────────────────────────────────────────────────────────
+# CORS - Configuration professionnelle
+# ─────────────────────────────────────────────────────────────
 if DEBUG:
-    ALLOWED_HOSTS = ['*']
     CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = []
 else:
-    ALLOWED_HOSTS = ['easevent-backend.onrender.com']
-    CORS_ALLOWED_ORIGINS = [
-        # Ajoute ici l'URL de ton frontend quand il sera déployé
-        # 'https://ton-frontend.onrender.com',
-        # 'https://easevent.app',
-    ]
     CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        "https://easevent-backend.onrender.com",
+        # Ajoute ici l’URL de ton frontend web quand tu le déploieras
+        # "https://ton-frontend.onrender.com",
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # ─────────────────────────────────────────────────────────────
 # MODÈLE UTILISATEUR PERSONNALISÉ
