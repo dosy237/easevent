@@ -72,54 +72,18 @@ from .serializers import EventPublicSerializer
 @permission_classes([AllowAny])
 def liste_evenements_publics(request):
     """
-    Liste des événements publics publiés.
-    Version robuste et professionnelle.
+    Version temporaire de debug.
+    Retourne TOUS les événements publiés (même privés) pour tester.
     """
-    # On utilise .all() pour être sûr de bypasser un éventuel custom manager trop restrictif
-    queryset = Event.objects.all().filter(
-        visibility='public',
+    evenements = Event.objects.filter(
         status='published',
         deleted_at__isnull=True,
-    )
+    ).order_by('start_date')
 
-    # Filtres optionnels (recherche, type, dates)
-    search = request.query_params.get('search', '').strip()
-    if search:
-        queryset = queryset.filter(
-            Q(title__icontains=search) |
-            Q(description__icontains=search) |
-            Q(location_address__icontains=search)
-        )
-
-    event_type = request.query_params.get('type', '').strip()
-    if event_type:
-        queryset = queryset.filter(event_type=event_type)
-
-    date_from = request.query_params.get('date_from', '').strip()
-    if date_from:
-        try:
-            queryset = queryset.filter(
-                start_date__date__gte=datetime.strptime(date_from, '%Y-%m-%d').date()
-            )
-        except ValueError:
-            pass
-
-    date_to = request.query_params.get('date_to', '').strip()
-    if date_to:
-        try:
-            queryset = queryset.filter(
-                start_date__date__lte=datetime.strptime(date_to, '%Y-%m-%d').date()
-            )
-        except ValueError:
-            pass
-
-    # Tri par date (plus proche en premier)
-    queryset = queryset.order_by('start_date')
-
-    serializer = EventPublicSerializer(queryset, many=True)
+    serializer = EventPublicSerializer(evenements, many=True)
 
     return Response({
-        'count': queryset.count(),
+        'count': evenements.count(),
         'events': serializer.data,
     })
 # ════════════════════════════════════════════════════════════════
