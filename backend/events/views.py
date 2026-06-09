@@ -72,18 +72,17 @@ from .serializers import EventPublicSerializer
 @permission_classes([AllowAny])
 def liste_evenements_publics(request):
     """
-    Retourne la liste des événements publics publiés.
-    Fil d'exploration public (accessible sans connexion).
+    Liste des événements publics publiés.
+    Version robuste et professionnelle.
     """
-    # === 1. Filtre de base (public + publié + non supprimé) ===
-    queryset = Event.objects.filter(
+    # On utilise .all() pour être sûr de bypasser un éventuel custom manager trop restrictif
+    queryset = Event.objects.all().filter(
         visibility='public',
         status='published',
         deleted_at__isnull=True,
     )
 
-    # === 2. Filtres dynamiques ===
-    # Recherche texte
+    # Filtres optionnels (recherche, type, dates)
     search = request.query_params.get('search', '').strip()
     if search:
         queryset = queryset.filter(
@@ -92,65 +91,35 @@ def liste_evenements_publics(request):
             Q(location_address__icontains=search)
         )
 
-    # Filtre par type d'événement
     event_type = request.query_params.get('type', '').strip()
     if event_type:
         queryset = queryset.filter(event_type=event_type)
 
-    # Filtre par date
     date_from = request.query_params.get('date_from', '').strip()
     if date_from:
         try:
-            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-            queryset = queryset.filter(start_date__date__gte=date_from_obj)
+            queryset = queryset.filter(
+                start_date__date__gte=datetime.strptime(date_from, '%Y-%m-%d').date()
+            )
         except ValueError:
             pass
 
     date_to = request.query_params.get('date_to', '').strip()
     if date_to:
         try:
-            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-            queryset = queryset.filter(start_date__date__lte=date_to_obj)
+            queryset = queryset.filter(
+                start_date__date__lte=datetime.strptime(date_to, '%Y-%m-%d').date()
+            )
         except ValueError:
             pass
 
-    # === 3. Gestion du tri ===
-    ordering = request.query_params.get('ordering', 'date')
-    user_lat = request.query_params.get('lat')
-    user_lng = request.query_params.get('lng')
+    # Tri par date (plus proche en premier)
+    queryset = queryset.order_by('start_date')
 
-    # On convertit en liste seulement si on a besoin de tri custom
-    if ordering == 'distance' and user_lat and user_lng:
-        evenements_list = list(queryset)
-
-        def haversine(lat1, lon1, lat2, lon2):
-            R = 6371  # Rayon de la Terre en km
-            lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
-            dlat = lat2 - lat1
-            dlon = lon2 - lon1
-            a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-            return R * 2 * math.asin(math.sqrt(a))
-
-        for event in evenements_list:
-            if event.latitude and event.longitude:
-                event._distance_km = round(haversine(user_lat, user_lng, event.latitude, event.longitude), 1)
-            else:
-                event._distance_km = None
-
-        evenements_list = sorted(evenements_list, key=lambda e: e._distance_km if e._distance_km is not None else 99999)
-
-    elif ordering == 'popular':
-        evenements_list = list(queryset.order_by('-view_count'))
-
-    else:
-        # Tri par date (plus proche en premier)
-        evenements_list = list(queryset.order_by('start_date'))
-
-    # === 4. Sérialisation et réponse ===
-    serializer = EventPublicSerializer(evenements_list, many=True)
+    serializer = EventPublicSerializer(queryset, many=True)
 
     return Response({
-        'count': len(evenements_list),
+        'count': queryset.count(),
         'events': serializer.data,
     })
 # ════════════════════════════════════════════════════════════════
