@@ -6,14 +6,12 @@ Production-ready pour Render.com
 ═══════════════════════════════════════════════════════════════
 """
 
-import os
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
 import dj_database_url
 import cloudinary
 
-# BASE_DIR pointe vers le dossier backend/
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ─────────────────────────────────────────────────────────────
@@ -22,21 +20,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Configuration des hôtes et CORS selon l'environnement
-# ─────────────────────────────────────────────────────────────
-# CORS - Configuration professionnelle
-# ─────────────────────────────────────────────────────────────
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-    CORS_ALLOWED_ORIGINS = []
-else:
-    CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = [
-        "https://easevent-backend.onrender.com",
-        # Ajoute ici l’URL de ton frontend web quand tu le déploieras
-        # "https://ton-frontend.onrender.com",
-    ]
+# ALLOWED_HOSTS - Version robuste (corrige le DisallowedHost)
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1'
+).split(',')
 
+if not DEBUG:
+    ALLOWED_HOSTS.extend([
+        'easevent-backend.onrender.com',
+        '.onrender.com',
+    ])
+    ALLOWED_HOSTS = list(set(ALLOWED_HOSTS))  # Évite les doublons
+
+# En-tête proxy SSL (important sur Render)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# ─────────────────────────────────────────────────────────────
+# CORS
+# ─────────────────────────────────────────────────────────────
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_HEADERS = [
     'accept',
@@ -50,13 +52,23 @@ CORS_ALLOWED_HEADERS = [
     'x-requested-with',
 ]
 
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = []
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        "https://easevent-backend.onrender.com",
+        # Ajoute l'URL de ton frontend quand tu le déploieras
+    ]
+
 # ─────────────────────────────────────────────────────────────
-# MODÈLE UTILISATEUR PERSONNALISÉ
+# MODÈLE UTILISATEUR
 # ─────────────────────────────────────────────────────────────
 AUTH_USER_MODEL = 'users.User'
 
 # ─────────────────────────────────────────────────────────────
-# APPLICATIONS INSTALLÉES
+# APPLICATIONS
 # ─────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -87,7 +99,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',   # ← Important pour Render
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -118,18 +130,13 @@ WSGI_APPLICATION = 'easevent.wsgi.application'
 ASGI_APPLICATION = 'easevent.asgi.application'
 
 # ─────────────────────────────────────────────────────────────
-# BASE DE DONNÉES (Compatible Render + Local)
+# BASE DE DONNÉES
 # ─────────────────────────────────────────────────────────────
 if 'DATABASE_URL' in os.environ:
-    # Production sur Render (utilise l'addon Postgres)
     DATABASES = {
-        'default': dj_database_url.config(
-            conn_max_age=600,
-            ssl_require=True
-        )
+        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
     }
 else:
-    # Développement local (via .env)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -143,7 +150,7 @@ else:
     }
 
 # ─────────────────────────────────────────────────────────────
-# DJANGO REST FRAMEWORK + JWT (très bon setup)
+# DJANGO REST FRAMEWORK + JWT
 # ─────────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -188,10 +195,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Europe/Paris'
 
-# (Ajoute ici ton CELERY_BEAT_SCHEDULE si tu l'as)
-# from celery.schedules import crontab
-# CELERY_BEAT_SCHEDULE = { ... }
-
 # ─────────────────────────────────────────────────────────────
 # FICHIERS STATIQUES & MÉDIAS
 # ─────────────────────────────────────────────────────────────
@@ -226,5 +229,5 @@ cloudinary.config(
     cloud_name=config('CLOUDINARY_CLOUD_NAME'),
     api_key=config('CLOUDINARY_API_KEY'),
     api_secret=config('CLOUDINARY_API_SECRET'),
-    secure=True
+    secure=True,
 )
