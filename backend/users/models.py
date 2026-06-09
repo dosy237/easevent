@@ -211,7 +211,7 @@ class UserPreferences(models.Model):
       sont supprimées automatiquement.
 
     Cette table est créée automatiquement via un signal Django
-    (voir users/signals.py) — on n'a jamais besoin de l'appeler
+    (voir users/signals.py) - on n'a jamais besoin de l'appeler
     manuellement.
     """
 
