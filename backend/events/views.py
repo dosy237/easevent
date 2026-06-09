@@ -68,12 +68,13 @@ from .serializers import EventPublicSerializer
 # VIEW : liste_evenements_publics
 # GET /api/events/publics/
 # ════════════════════════════════════════════════════════════════
+from datetime import datetime
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def liste_evenements_publics(request):
     """
-    Version temporaire de debug.
-    Retourne TOUS les événements publiés (même privés) pour tester.
+    Version de debug avec horodatage.
     """
     evenements = Event.objects.filter(
         status='published',
@@ -85,6 +86,8 @@ def liste_evenements_publics(request):
     return Response({
         'count': evenements.count(),
         'events': serializer.data,
+        'debug_deployed_at': datetime.now().isoformat(),   # ← Preuve du code
+        'debug_version': 'v3-simplifiee'
     })
 # ════════════════════════════════════════════════════════════════
 # VIEW : detail_evenement_public
