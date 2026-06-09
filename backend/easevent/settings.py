@@ -6,6 +6,7 @@ Production-ready pour Render.com
 ═══════════════════════════════════════════════════════════════
 """
 
+import os
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
@@ -31,7 +32,7 @@ if not DEBUG:
         'easevent-backend.onrender.com',
         '.onrender.com',
     ])
-    ALLOWED_HOSTS = list(set(ALLOWED_HOSTS))  # Évite les doublons
+    ALLOWED_HOSTS = list(set(ALLOWED_HOSTS))
 
 # En-tête proxy SSL (important sur Render)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -59,7 +60,6 @@ else:
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [
         "https://easevent-backend.onrender.com",
-        # Ajoute l'URL de ton frontend quand tu le déploieras
     ]
 
 # ─────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ SIMPLE_JWT = {
 }
 
 # ─────────────────────────────────────────────────────────────
-# REDIS + CELERY + CHANNELS
+# REDIS + CELERY
 # ─────────────────────────────────────────────────────────────
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
