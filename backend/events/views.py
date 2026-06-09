@@ -70,24 +70,23 @@ from .serializers import EventPublicSerializer
 # ════════════════════════════════════════════════════════════════
 from datetime import datetime
 
+from django.db import connection
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def liste_evenements_publics(request):
-    """
-    Version de debug avec horodatage.
-    """
-    evenements = Event.objects.filter(
-        status='published',
-        deleted_at__isnull=True,
-    ).order_by('start_date')
-
-    serializer = EventPublicSerializer(evenements, many=True)
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM events 
+            WHERE status = 'published' 
+            AND deleted_at IS NULL
+        """)
+        count = cursor.fetchone()[0]
 
     return Response({
-        'count': evenements.count(),
-        'events': serializer.data,
-        'debug_deployed_at': datetime.now().isoformat(),   # ← Preuve du code
-        'debug_version': 'v3-simplifiee'
+        'raw_count_from_db': count,
+        'debug_version': 'v4-raw-sql'
     })
 # ════════════════════════════════════════════════════════════════
 # VIEW : detail_evenement_public
