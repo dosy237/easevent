@@ -21,20 +21,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# ALLOWED_HOSTS - Version robuste (corrige le DisallowedHost)
-ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1'
-).split(',')
+# ALLOWED_HOSTS - Version robuste et définitive
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'easevent-backend.onrender.com',
+    '.onrender.com',
+]
 
-if not DEBUG:
-    ALLOWED_HOSTS.extend([
-        'easevent-backend.onrender.com',
-        '.onrender.com',
-    ])
-    ALLOWED_HOSTS = list(set(ALLOWED_HOSTS))
+# Ajoute les hôtes supplémentaires depuis les variables d'environnement
+extra_hosts = config('ALLOWED_HOSTS', default='').split(',')
+for host in extra_hosts:
+    if host.strip() and host.strip() not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host.strip())
 
-# En-tête proxy SSL (important sur Render)
+# En-tête proxy SSL (obligatoire sur Render)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ─────────────────────────────────────────────────────────────
@@ -42,15 +43,8 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # ─────────────────────────────────────────────────────────────
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
+    'accept', 'accept-encoding', 'authorization', 'content-type',
+    'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with',
 ]
 
 if DEBUG:
@@ -58,9 +52,7 @@ if DEBUG:
     CORS_ALLOWED_ORIGINS = []
 else:
     CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = [
-        "https://easevent-backend.onrender.com",
-    ]
+    CORS_ALLOWED_ORIGINS = ["https://easevent-backend.onrender.com"]
 
 # ─────────────────────────────────────────────────────────────
 # MODÈLE UTILISATEUR
@@ -78,14 +70,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.postgres',
-
-    # Third-party
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'whitenoise.runserver_nostatic',
-
-    # Apps du projet
     'users',
     'events',
     'invitations',
@@ -127,7 +115,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'easevent.wsgi.application'
-ASGI_APPLICATION = 'easevent.asgi.application'
 
 # ─────────────────────────────────────────────────────────────
 # BASE DE DONNÉES
@@ -171,9 +158,6 @@ SIMPLE_JWT = {
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -215,16 +199,13 @@ USE_I18N = True
 USE_TZ = True
 
 # ─────────────────────────────────────────────────────────────
-# EMAIL (SendGrid)
+# EMAIL + CLOUDINARY
 # ─────────────────────────────────────────────────────────────
 EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 SENDGRID_API_KEY = config('SENDGRID_API_KEY')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='dosyca35@gmail.com')
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 
-# ─────────────────────────────────────────────────────────────
-# CLOUDINARY
-# ─────────────────────────────────────────────────────────────
 cloudinary.config(
     cloud_name=config('CLOUDINARY_CLOUD_NAME'),
     api_key=config('CLOUDINARY_API_KEY'),
