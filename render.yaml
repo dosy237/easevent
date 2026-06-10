@@ -1,0 +1,177 @@
+# ═══════════════════════════════════════════════════════════════════════
+# render.yaml — Easevent  ·  Render.com Blueprint
+# ═══════════════════════════════════════════════════════════════════════
+# Déploie d'un coup :
+#   • easevent-backend   → Django 6 + Gunicorn (Web Service)
+#   • easevent-celery    → Celery Worker (Background Worker)
+#   • easevent-redis     → Redis (cache + broker Celery)
+#   • easevent-frontend  → Expo Web export (Static Site)
+#   • easevent-db        → PostgreSQL 16
+#
+# ⚡ First deploy :
+#   git push  →  Render détecte ce fichier  →  "Apply Blueprint"
+#   Puis renseigner manuellement dans le Dashboard les secrets du groupe
+#   "easevent-secrets" (voir la liste SECRETS MANUELS ci-dessous).
+# ═══════════════════════════════════════════════════════════════════════
+
+# ───────────────────────────────────────────────────────────────────────
+# GROUPE DE SECRETS PARTAGÉS
+# ───────────────────────────────────────────────────────────────────────
+# Ces valeurs sont à saisir UNE SEULE FOIS dans :
+#   Render Dashboard → Environment Groups → easevent-secrets
+#
+#   SECRETS MANUELS (sync: false) :
+#   ┌─────────────────────────────────────────────────────────────────┐
+#   │  SENDGRID_API_KEY        → clé API SendGrid                     │
+#   │  DEFAULT_FROM_EMAIL      → ex: noreply@easevent.app             │
+#   │  CLOUDINARY_CLOUD_NAME   → nom du cloud Cloudinary              │
+#   │  CLOUDINARY_API_KEY      → clé API Cloudinary                   │
+#   │  CLOUDINARY_API_SECRET   → secret API Cloudinary                │
+#   └─────────────────────────────────────────────────────────────────┘
+# ───────────────────────────────────────────────────────────────────────
+envVarGroups:
+  - name: easevent-secrets
+    envVars:
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+# ───────────────────────────────────────────────────────────────────────
+# SERVICES
+# ───────────────────────────────────────────────────────────────────────
+services:
+
+  # ┌─────────────────────────────────────────────────────────────────┐
+  # │  BACKEND  —  Django 6 + DRF + Gunicorn                          │
+  # └─────────────────────────────────────────────────────────────────┘
+  - type: web
+    name: easevent-backend
+    env: python
+    region: frankfurt
+    plan: starter           # passer à "standard" en prod réelle
+    rootDir: backend
+    buildCommand: chmod +x build.sh && bash build.sh
+    startCommand: >-
+      gunicorn easevent.wsgi:application
+      --bind 0.0.0.0:$PORT
+      --workers 2
+      --worker-class sync
+      --timeout 120
+      --log-level info
+      --access-logfile -
+      --error-logfile -
+    healthCheckPath: /api/events/publics/
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SECRET_KEY
+        generateValue: true           # Render génère une clé aléatoire unique
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: easevent-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: easevent-redis
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: "easevent-backend.onrender.com"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://easevent-frontend.onrender.com"
+        # ⚠️  Mettre à jour si domaine personnalisé (ex: https://app.easevent.cm)
+    envVarGroups:
+      - easevent-secrets
+
+  # ┌─────────────────────────────────────────────────────────────────┐
+  # │  CELERY WORKER  —  tâches asynchrones (emails, médias, etc.)    │
+  # └─────────────────────────────────────────────────────────────────┘
+  - type: worker
+    name: easevent-celery
+    env: python
+    region: frankfurt
+    plan: starter
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: celery -A easevent worker --loglevel=info --concurrency=2
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: easevent-backend
+          envVarKey: SECRET_KEY
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: easevent-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: easevent-redis
+          property: connectionString
+    envVarGroups:
+      - easevent-secrets
+
+  # ┌─────────────────────────────────────────────────────────────────┐
+  # │  REDIS  —  cache Django + broker Celery                         │
+  # └─────────────────────────────────────────────────────────────────┘
+  - type: redis
+    name: easevent-redis
+    region: frankfurt
+    plan: free
+    maxmemoryPolicy: noeviction   # Celery ne supporte pas l'éviction
+    ipAllowList: []               # Accessible uniquement depuis les services Render
+
+  # ┌─────────────────────────────────────────────────────────────────┐
+  # │  FRONTEND  —  Expo Web (React Native → site statique)           │
+  # └─────────────────────────────────────────────────────────────────┘
+  - type: web
+    name: easevent-frontend
+    env: static
+    region: frankfurt
+    plan: free
+    rootDir: frontend
+    buildCommand: chmod +x build.sh && bash build.sh
+    staticPublishPath: dist
+    autoDeploy: true
+    headers:
+      - path: /static/*
+        name: Cache-Control
+        value: "public, max-age=31536000, immutable"   # assets hachés → cache 1 an
+      - path: /*
+        name: Cache-Control
+        value: "public, max-age=0, must-revalidate"    # HTML → toujours revalider
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html                        # SPA → toutes les routes → index.html
+    envVars:
+      - key: EXPO_PUBLIC_API_BASE
+        value: "https://easevent-backend.onrender.com"
+        # ⚠️  Mettre à jour si domaine personnalisé backend
+
+# ───────────────────────────────────────────────────────────────────────
+# BASE DE DONNÉES POSTGRESQL
+# ───────────────────────────────────────────────────────────────────────
+databases:
+  - name: easevent-db
+    databaseName: easevent
+    user: easevent
+    region: frankfurt
+    plan: free                 # passer à "starter" en prod réelle (backups auto)
+    postgresMajorVersion: 16
